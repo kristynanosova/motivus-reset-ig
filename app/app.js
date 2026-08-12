@@ -732,3 +732,105 @@ document.addEventListener('DOMContentLoaded', () => {
   renderPreview();
   renderCalendar(currentMonth);
 });
+
+// ════════════════════════════════════════
+//  ZÁLOŽKA TEXTY & TECHNIKY
+// ════════════════════════════════════════
+
+let currentTextId = 1;
+
+function switchView(view) {
+  document.getElementById('view-editor').classList.toggle('hidden', view !== 'editor');
+  document.getElementById('view-calendar').classList.toggle('hidden', view !== 'calendar');
+  document.getElementById('view-texts').classList.toggle('hidden', view !== 'texts');
+
+  document.getElementById('tab-editor').classList.toggle('active', view === 'editor');
+  document.getElementById('tab-calendar').classList.toggle('active', view === 'calendar');
+  document.getElementById('tab-texts').classList.toggle('active', view === 'texts');
+
+  if (view === 'calendar') renderCalendar(currentMonth);
+  if (view === 'texts') {
+    renderTextsList();
+    renderTextArticle(currentTextId);
+  }
+}
+
+function renderTextsList(searchQuery = '') {
+  const listEl = document.getElementById('texts-list');
+  if (!listEl || typeof CONTENT_LIBRARY === 'undefined') return;
+
+  const query = searchQuery.toLowerCase().trim();
+
+  const filtered = CONTENT_LIBRARY.filter(t => {
+    if (!query) return true;
+    const full = TEXTS_LIBRARY[t.id] ? TEXTS_LIBRARY[t.id].fullText : '';
+    return t.title.toLowerCase().includes(query) ||
+           t.author.toLowerCase().includes(query) ||
+           t.seriesName.toLowerCase().includes(query) ||
+           full.toLowerCase().includes(query);
+  });
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div class="texts-item-empty">Žádné téma neodpovídá hledání.</div>';
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(t => {
+    const activeClass = t.id === currentTextId ? 'active' : '';
+    return `
+      <div class="texts-item ${activeClass}" onclick="selectTextTopic(${t.id})">
+        <div class="texts-item-num">#${t.id}</div>
+        <div class="texts-item-body">
+          <div class="texts-item-title">${t.title}</div>
+          <div class="texts-item-sub">Série ${t.series}: ${t.seriesName}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectTextTopic(id) {
+  currentTextId = id;
+  renderTextsList(document.getElementById('texts-search')?.value || '');
+  renderTextArticle(id);
+}
+
+function filterTexts(query) {
+  renderTextsList(query);
+}
+
+function renderTextArticle(id) {
+  const container = document.getElementById('texts-article-container');
+  if (!container) return;
+
+  const topicData = CONTENT_LIBRARY.find(t => t.id === id);
+  const textData  = typeof TEXTS_LIBRARY !== 'undefined' ? TEXTS_LIBRARY[id] : null;
+
+  if (!topicData || !textData) {
+    container.innerHTML = '<div class="text-error">Text pro toto téma nebyl nalezen.</div>';
+    return;
+  }
+
+  container.innerHTML = `
+    <article class="text-article">
+      <div class="text-article-header">
+        <div class="text-article-meta">
+          <span class="text-badge" style="background:${topicData.seriesColor}">Série ${topicData.series}: ${topicData.seriesName}</span>
+          <span class="text-date">📅 Plánované datum: ${formatDate(topicData.date)}</span>
+          <span class="text-author">✍️ ${topicData.author}</span>
+        </div>
+        <h1 class="text-article-title">${textData.title}</h1>
+        <div class="text-article-actions">
+          <button class="btn-primary" onclick="loadTopic(${topicData.id})">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Načíst toto téma do Editoru šablon
+          </button>
+        </div>
+      </div>
+      <div class="text-article-body">
+        ${textData.fullText}
+      </div>
+    </article>
+  `;
+}
+
