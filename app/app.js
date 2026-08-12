@@ -466,7 +466,253 @@ function escapeHtml(str) {
 //  INICIALIZACE
 // ════════════════════════════════════════
 
-function init() {
+// Původní init nahrazen rozšířeným init na konci souboru (viz nový DOMContentLoaded)
+
+// ════════════════════════════════════════
+//  PŘEPÍNÁNÍ POHLEDŮ (Editor / Kalendář)
+// ════════════════════════════════════════
+
+function switchView(view) {
+  document.getElementById('view-editor').classList.toggle('hidden', view !== 'editor');
+  document.getElementById('view-calendar').classList.toggle('hidden', view !== 'calendar');
+  document.getElementById('tab-editor').classList.toggle('active', view === 'editor');
+  document.getElementById('tab-calendar').classList.toggle('active', view === 'calendar');
+
+  if (view === 'calendar') renderCalendar(currentMonth);
+}
+
+// ════════════════════════════════════════
+//  FORMÁT PŘÍSPĚVKU (Příspěvek / Karusel / Stories)
+// ════════════════════════════════════════
+
+let currentPostType = 'prispevek';
+
+function setPostType(pt) {
+  currentPostType = pt;
+
+  document.querySelectorAll('.pt-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.pt === pt);
+  });
+
+  const wrapper   = document.getElementById('preview-wrapper');
+  const badge     = document.getElementById('preview-badge');
+
+  if (pt === 'stories') {
+    wrapper.classList.add('stories-mode');
+    badge.textContent = '1080 × 1920 px · Instagram Stories';
+  } else {
+    wrapper.classList.remove('stories-mode');
+    badge.textContent = '1080 × 1080 px · Instagram Feed';
+  }
+
+  // Aktualizuj label exportu
+  const exportBtn = document.getElementById('btn-export');
+  if (pt === 'stories') {
+    exportBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Stáhnout PNG (Stories)`;
+  } else {
+    exportBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Stáhnout PNG (1080×1080)`;
+  }
+}
+
+// ════════════════════════════════════════
+//  KALENDÁŘ — RENDER
+// ════════════════════════════════════════
+
+let currentMonth = '2026-09';
+
+const MONTH_LABELS = {
+  '2026-09': 'září 2026',
+  '2026-10': 'října 2026',
+  '2026-11': 'listopadu 2026',
+  '2026-12': 'prosince 2026',
+  '2027-01': 'ledna 2027',
+};
+
+const SERIES_EMOJIS = {
+  1: '🔥', 2: '🧠', 3: '🫁', 4: '🌿',
+  5: '💚', 6: '🦋', 7: '💛', 8: '🔴',
+  9: '🌍', 10: '✨'
+};
+
+const FORMAT_EMOJIS = {
+  prispevek: '📷',
+  karusel:   '📱',
+  stories:   '📲',
+};
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const days = ['ne', 'po', 'út', 'st', 'čt', 'pá', 'so'];
+  const months = ['ledna', 'února', 'března', 'dubna', 'května', 'června',
+                  'července', 'srpna', 'září', 'října', 'listopadu', 'prosince'];
+  return `${days[d.getDay()]} ${d.getDate()}. ${months[d.getMonth()]}`;
+}
+
+function filterMonth(month) {
+  currentMonth = month;
+  document.querySelectorAll('.month-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.month === month);
+  });
+  renderCalendar(month);
+}
+
+function renderCalendar(month) {
+  const grid = document.getElementById('calendar-grid');
+  if (!grid || typeof CONTENT_LIBRARY === 'undefined') return;
+
+  const items = month === 'all'
+    ? CONTENT_LIBRARY
+    : CONTENT_LIBRARY.filter(t => t.date.startsWith(month));
+
+  if (items.length === 0) {
+    grid.innerHTML = '<div class="cal-empty">V tomto měsíci nejsou žádná témata.</div>';
+    return;
+  }
+
+  grid.innerHTML = items.map(topic => {
+    const isKarusel = topic.template === 'karusel';
+    const slides    = isKarusel && topic.slides ? ` · ${topic.slides.length + 1} slidů` : '';
+    const emoji     = SERIES_EMOJIS[topic.series] || '📌';
+    const fmtEmoji  = FORMAT_EMOJIS[topic.postType] || '📷';
+
+    return `
+    <div class="cal-card" onclick="loadTopic(${topic.id})">
+      <div class="cal-card-stripe" style="background:${topic.seriesColor}"></div>
+      <div class="cal-card-inner">
+        <div class="cal-card-header">
+          <div class="cal-date">${formatDate(topic.date)}</div>
+          <div class="cal-format-badge">${fmtEmoji} ${topic.postType === 'karusel' ? 'Karusel' + slides : topic.postType === 'stories' ? 'Stories' : 'Příspěvek'}</div>
+        </div>
+        <div class="cal-series">${emoji} Série ${topic.series}: ${topic.seriesName}</div>
+        <div class="cal-title">${topic.title}</div>
+        <div class="cal-author">✍️ ${topic.author}</div>
+        <button class="cal-load-btn" onclick="loadTopic(${topic.id}); event.stopPropagation();">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Načíst do editoru
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+//  NAČTENÍ TÉMATU DO EDITORU
+// ════════════════════════════════════════
+
+function loadTopic(id) {
+  const topic = CONTENT_LIBRARY.find(t => t.id === id);
+  if (!topic) return;
+
+  // Nastav šablonu
+  setTemplate(topic.template);
+
+  // Nastav barvu
+  setColor(topic.color);
+
+  // Nastav formát příspěvku
+  setPostType(topic.postType);
+
+  // Vyplň pole
+  state.fields = { ...topic.fields };
+
+  // Aktualizuj hodnoty v DOM polích
+  Object.entries(topic.fields).forEach(([key, val]) => {
+    const el = document.querySelector(`[data-key="${key}"]`);
+    if (el) el.value = val;
+  });
+
+  // Nastav caption
+  document.getElementById('caption-input').value = topic.caption || '';
+
+  // Překresli náhled
+  renderPreview();
+
+  // Přepni na editor
+  switchView('editor');
+
+  // Zobraz notifikaci
+  showToast(`✅ Téma načteno: „${topic.title}"`);
+
+  // Scroll nahoru
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ════════════════════════════════════════
+//  INICIALIZACE KARUSEL SLIDŮ V EDITORU
+// ════════════════════════════════════════
+
+// Přidej tlačítka pro navigaci slidů při načtení karuselu
+function renderSlideNavigator(topic) {
+  if (!topic || !topic.slides || topic.slides.length === 0) return;
+
+  // Do fields-container přidej navigaci slidů
+  const container = document.getElementById('fields-container');
+  const allSlides = [{ title: topic.fields.title, body: topic.fields.body, cta: '' }, ...topic.slides];
+
+  const navHtml = `
+    <div class="slide-nav" style="margin-top:8px; padding:10px; background:rgba(255,255,255,0.07); border-radius:8px;">
+      <div class="field-label" style="margin-bottom:8px;">Navigace slidů</div>
+      <div class="slide-nav-btns">
+        ${allSlides.map((slide, i) => `
+          <button class="slide-nav-btn ${i === 0 ? 'active' : ''}"
+                  onclick="loadSlide(${topic.id}, ${i})"
+                  title="${slide.title || 'Slide ' + (i + 1)}">
+            ${i + 1}
+          </button>`).join('')}
+      </div>
+      <div class="slide-nav-hint" style="font-size:11px; opacity:0.5; margin-top:6px;">
+        Klikněte na číslo slidu pro náhled
+      </div>
+    </div>`;
+
+  container.insertAdjacentHTML('beforeend', navHtml);
+}
+
+let currentSlideTopicId = null;
+
+function loadSlide(topicId, slideIndex) {
+  const topic = CONTENT_LIBRARY.find(t => t.id === topicId);
+  if (!topic || !topic.slides) return;
+
+  currentSlideTopicId = topicId;
+  const allSlides = [{ title: topic.fields.title, body: topic.fields.body, cta: '' }, ...topic.slides];
+  const slide = allSlides[slideIndex];
+
+  if (!slide) return;
+
+  const slideNum = slideIndex + 1;
+  const total    = allSlides.length;
+
+  const newFields = {
+    slide: String(slideNum),
+    total: String(total),
+    title: slide.title || '',
+    body:  slide.body  || '',
+    cta:   slide.cta   || ''
+  };
+
+  state.fields = newFields;
+
+  // Aktualizuj DOM pole
+  Object.entries(newFields).forEach(([key, val]) => {
+    const el = document.querySelector(`[data-key="${key}"]`);
+    if (el) el.value = val;
+  });
+
+  renderPreview();
+
+  // Zvýrazni aktivní slide button
+  document.querySelectorAll('.slide-nav-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === slideIndex);
+  });
+}
+
+// ════════════════════════════════════════
+//  ROZŠÍŘENÍ INIT O NOVÉ FUNKCE
+// ════════════════════════════════════════
+
+// Override původní init, přidáme ho znovu po DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
   // Tlačítka šablon
   document.querySelectorAll('.tpl-btn').forEach(btn => {
     btn.addEventListener('click', () => setTemplate(btn.dataset.template));
@@ -481,9 +727,8 @@ function init() {
   document.getElementById('btn-export').addEventListener('click', exportPNG);
   document.getElementById('btn-copy').addEventListener('click', copyCaption);
 
-  // Úvodní render
+  // Inicializace
   renderFields();
   renderPreview();
-}
-
-document.addEventListener('DOMContentLoaded', init);
+  renderCalendar(currentMonth);
+});
