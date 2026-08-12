@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Motivus Reset — Instagram Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar">
+
+    <div class="studio-brand">
+      <div class="brand-logo">MR</div>
+      <div class="brand-text">
+        <div class="brand-name">Motivus Reset</div>
+        <div class="brand-sub">Instagram Studio</div>
+      </div>
+    </div>
+
+    <!-- Šablona -->
+    <div class="sidebar-section">
+      <div class="section-label">Šablona</div>
+      <div class="template-picker">
+        <button class="tpl-btn active" id="tpl-citat" data-template="citat">
+          <span class="tpl-icon">💬</span>
+          <span>Citát</span>
+        </button>
+        <button class="tpl-btn" id="tpl-edukace" data-template="edukace">
+          <span class="tpl-icon">📚</span>
+          <span>Edukace</span>
+        </button>
+        <button class="tpl-btn" id="tpl-workshop" data-template="workshop">
+          <span class="tpl-icon">🗓️</span>
+          <span>Workshop</span>
+        </button>
+        <button class="tpl-btn" id="tpl-tipy" data-template="tipy">
+          <span class="tpl-icon">✅</span>
+          <span>Tipy</span>
+        </button>
+        <button class="tpl-btn" id="tpl-osobni" data-template="osobni">
+          <span class="tpl-icon">🌿</span>
+          <span>Osobní</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Barva -->
+    <div class="sidebar-section">
+      <div class="section-label">Barevné schéma</div>
+      <div class="color-picker">
+        <button class="color-btn active" data-color="terracotta" title="Terracotta" style="background:#C4714F"></button>
+        <button class="color-btn" data-color="green"      title="Šalvějová"  style="background:#8BAF8E"></button>
+        <button class="color-btn" data-color="cream"      title="Smetanová"  style="background:#F5EFE6; border:2px solid rgba(255,255,255,0.2)"></button>
+        <button class="color-btn" data-color="forest"     title="Lesní"      style="background:#2D5016"></button>
+        <button class="color-btn" data-color="dark"       title="Tmavá"      style="background:#231c16"></button>
+      </div>
+    </div>
+
+    <!-- Obsah – dynamická pole -->
+    <div class="sidebar-section">
+      <div class="section-label">Obsah příspěvku</div>
+      <div id="fields-container"></div>
+    </div>
+
+    <!-- Caption -->
+    <div class="sidebar-section">
+      <div class="section-label">Popisek (caption + hashtagy)</div>
+      <textarea id="caption-input" placeholder="Napište popisek příspěvku s hashtagy..."></textarea>
+    </div>
+
+    <!-- Akce -->
+    <div class="sidebar-actions">
+      <button class="btn-primary" id="btn-export">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Stáhnout PNG (1080×1080)
+      </button>
+      <button class="btn-secondary" id="btn-copy">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Kopírovat popisek
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- ═══ PREVIEW ═══ -->
+  <main class="preview-area">
+    <div class="preview-topbar">
+      <span class="preview-title">Náhled příspěvku</span>
+      <span class="preview-badge">1080 × 1080 px · Instagram Feed</span>
+    </div>
+
+    <div class="preview-wrapper">
+      <div id="post-preview"><!-- renderováno JS --></div>
+    </div>
+
+    <p class="preview-hint">
+      📥 Stáhněte PNG → nahrajte do Instagramu na telefonu
+    </p>
+  </main>
+
+</div>
+
+<!-- Toast notifikace -->
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
