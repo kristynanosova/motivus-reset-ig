@@ -7,6 +7,10 @@
 //  KONFIGURACE
 // ════════════════════════════════════════
 
+// Logo jako base64 (načteme asynchronně)
+let LOGO_SRC = 'assets/symbol.png';
+
+
 const COLORS = {
   terracotta: { bg: '#C4714F', text: '#F5EFE6', accent: '#F5EFE6',  name: 'Terracotta' },
   green:      { bg: '#8BAF8E', text: '#2D5016', accent: '#2D5016',  name: 'Šalvějová'  },
@@ -65,6 +69,17 @@ const TEMPLATES = {
       { key: 'image', label: 'Fotografie',     type: 'image' }
     ],
     caption: '🌿 Sdílím kousek ze zákulisí.\n\nPíšu to pro vás — i pro sebe.\n\n#motivusreset #pomahajiciprofese #regenerace #kristynanosova'
+  },
+  karusel: {
+    label: 'Karusel',
+    fields: [
+      { key: 'slide', label: 'Číslo slidu (1–5)', type: 'input',    placeholder: '1' },
+      { key: 'total', label: 'Celkem slidů',      type: 'input',    placeholder: '5' },
+      { key: 'title', label: 'Nadpis slidu',      type: 'input',    placeholder: 'Jak funguje vyhoření?' },
+      { key: 'body',  label: 'Text slidu',        type: 'textarea', placeholder: 'Napište obsah tohoto slidu...' },
+      { key: 'cta',   label: 'CTA (na posledním slidu)', type: 'input', placeholder: 'Uložte si to → sdílejte s kolegy' }
+    ],
+    caption: '👉 Přejeďte doprava — celá série.\n\nUložte si příspěvek pro příště! 🔖\n\n#motivusreset #prevencevyhoreni #pomahajiciprofese #regenerace'
   }
 };
 
@@ -146,11 +161,11 @@ function renderPreview() {
       html = `
         <div class="tpl-citat"
              style="background:${c.bg}; color:${c.text}; width:100%; height:100%;">
-          <span class="citat-quotemark" style="color:${c.text}">"</span>
+          <span class="citat-quotemark" style="color:${c.text}">&ldquo;</span>
           <div class="citat-text">${escapeHtml(quoteText)}</div>
           <div class="citat-divider" style="background:${c.text}"></div>
           <div class="citat-author">${escapeHtml(author)}</div>
-          <div class="post-watermark" style="color:${c.text}">@motivus.reset</div>
+          ${logoWatermark(c.text)}
         </div>`;
       break;
     }
@@ -178,7 +193,7 @@ function renderPreview() {
           <div class="edu-bar" style="background:${c.accent}"></div>
           <div class="edu-title">${escapeHtml(title)}</div>
           <div class="edu-bullets">${bulletsHtml}</div>
-          <div class="post-watermark" style="color:${c.text}">@motivus.reset</div>
+          ${logoWatermark(c.text)}
         </div>`;
       break;
     }
@@ -199,7 +214,7 @@ function renderPreview() {
           <div class="ws-subtitle">${escapeHtml(subtitle)}</div>
           <div class="ws-details">${dateStr}${locStr}</div>
           ${ctaStr}
-          <div class="post-watermark" style="color:${c.text}">@motivus.reset</div>
+          ${logoWatermark(c.text)}
         </div>`;
       break;
     }
@@ -225,7 +240,7 @@ function renderPreview() {
              style="background:${c.bg}; color:${c.text}; width:100%; height:100%;">
           <div class="tipy-title">${escapeHtml(title)}</div>
           <div class="tipy-list">${tipsHtml}</div>
-          <div class="post-watermark" style="color:${c.text}">@motivus.reset</div>
+          ${logoWatermark(c.text)}
         </div>`;
       break;
     }
@@ -243,13 +258,61 @@ function renderPreview() {
           <div class="osobni-content">
             <div class="osobni-text">${escapeHtml(text)}</div>
           </div>
-          <div class="post-watermark" style="color:#F5EFE6; z-index:2">@motivus.reset</div>
+          ${logoWatermark('#F5EFE6', true)}
+        </div>`;
+      break;
+    }
+
+    // ── KARUSEL ────────────────────────────
+    case 'karusel': {
+      const slideNum = f.slide || '1';
+      const total    = f.total || '5';
+      const title    = f.title || 'Nadpis slidu';
+      const body     = f.body  || 'Napište obsah tohoto slidu...';
+      const cta      = f.cta;
+      const isLast   = slideNum === total;
+
+      html = `
+        <div class="tpl-karusel"
+             style="background:${c.bg}; color:${c.text}; width:100%; height:100%;">
+          <div class="kar-top">
+            <div class="kar-progress">
+              ${Array.from({length: parseInt(total)||5}, (_,i) =>
+                `<div class="kar-dot ${i < parseInt(slideNum) ? 'active' : ''}" style="background:${i < parseInt(slideNum) ? c.accent : 'rgba(255,255,255,0.25)'}; ${i < parseInt(slideNum) ? '' : 'opacity:0.35'}"></div>`
+              ).join('')}
+            </div>
+            <div class="kar-num" style="color:${c.text}">${slideNum}/${total}</div>
+          </div>
+          <div class="kar-body">
+            <div class="kar-title" style="color:${c.text}">${escapeHtml(title)}</div>
+            <div class="kar-text"  style="color:${c.text}">${escapeHtml(body)}</div>
+            ${isLast && cta ? `<div class="kar-cta" style="border-color:${c.accent}; color:${c.accent}">${escapeHtml(cta)}</div>` : ''}
+          </div>
+          <div class="kar-swipe" style="color:${c.text}">👉 přejeďte</div>
+          ${logoWatermark(c.text)}
         </div>`;
       break;
     }
   }
 
   preview.innerHTML = html;
+}
+
+// ════════════════════════════════════════
+//  VODOZNAK S LOGEM
+// ════════════════════════════════════════
+
+function logoWatermark(textColor, overlay = false) {
+  const z = overlay ? 'z-index:2; position:absolute;' : '';
+  return `
+    <div class="post-watermark" style="color:${textColor}; ${z}">
+      <img src="assets/symbol.png"
+           style="width:18px; height:18px; object-fit:contain; vertical-align:middle;
+                  opacity:0.55; filter:${textColor === '#F5EFE6' || textColor === '#f5efe6' ? 'brightness(10)' : 'brightness(0)'};
+                  margin-right:5px;"
+           alt="">
+      @motivus.reset
+    </div>`;
 }
 
 // ════════════════════════════════════════
