@@ -834,3 +834,27 @@ function renderTextArticle(id) {
   `;
 }
 
+
+// ════════════════════════════════════════
+//  ZÁLOŽKA REELS STRATEGIE
+// ════════════════════════════════════════
+
+// Aktualizovaná funkce switchView s podporou záložky reels
+const origSwitchView = switchView;
+switchView = function(view) {
+  document.getElementById('view-editor').classList.toggle('hidden', view !== 'editor');
+  document.getElementById('view-calendar').classList.toggle('hidden', view !== 'calendar');
+  document.getElementById('view-texts').classList.toggle('hidden', view !== 'texts');
+  document.getElementById('view-reels')?.classList.toggle('hidden', view !== 'reels');
+
+  document.getElementById('tab-editor').classList.toggle('active', view === 'editor');
+  document.getElementById('tab-calendar').classList.toggle('active', view === 'calendar');
+  document.getElementById('tab-texts').classList.toggle('active', view === 'texts');
+  document.getElementById('tab-reels')?.classList.toggle('active', view === 'reels');
+
+  if (view === 'calendar') renderCalendar(currentMonth);
+  if (view === 'texts') {
+    renderTextsList();
+    renderTextArticle(currentTextId);
+  }
+};
